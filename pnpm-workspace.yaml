@@ -1,0 +1,4 @@
+onlyBuiltDependencies:
+  - abstract-socket
+  - es5-ext
+  - usocket

@@ -1,17 +1,21 @@
-const dbus = require('dbus-next');
-const MprisInterface = require('./mpris-interface');
+const dbus = require("dbus-next");
+const MprisInterface = require("./mpris-interface");
 const Variant = dbus.Variant;
-const JSBI = require('jsbi');
-const constants = require('../constants');
+const constants = require("../constants");
 
 let {
-  property, method, signal, DBusError,
-  ACCESS_READ, ACCESS_WRITE, ACCESS_READWRITE
+  property,
+  method,
+  signal,
+  DBusError,
+  ACCESS_READ,
+  ACCESS_WRITE,
+  ACCESS_READWRITE,
 } = dbus.interface;
 
 class PlayerInterface extends MprisInterface {
   constructor(player) {
-    super('org.mpris.MediaPlayer2.Player', player);
+    super("org.mpris.MediaPlayer2.Player", player);
   }
 
   _CanControl = true;
@@ -29,91 +33,91 @@ class PlayerInterface extends MprisInterface {
   _LoopStatus = constants.LOOP_STATUS_NONE;
   _PlaybackStatus = constants.PLAYBACK_STATUS_STOPPED;
 
-  @property({signature: 'b', access: ACCESS_READ})
+  @property({ signature: "b", access: ACCESS_READ })
   get CanControl() {
     return this._CanControl;
   }
 
-  @property({signature: 'b', access: ACCESS_READ})
+  @property({ signature: "b", access: ACCESS_READ })
   get CanPause() {
     return this._CanPause;
   }
 
-  @property({signature: 'b', access: ACCESS_READ})
+  @property({ signature: "b", access: ACCESS_READ })
   get CanPlay() {
     return this._CanPlay;
   }
 
-  @property({signature: 'b', access: ACCESS_READ})
+  @property({ signature: "b", access: ACCESS_READ })
   get CanSeek() {
     return this._CanSeek;
   }
 
-  @property({signature: 'b', access: ACCESS_READ})
+  @property({ signature: "b", access: ACCESS_READ })
   get CanGoNext() {
     return this._CanGoNext;
   }
 
-  @property({signature: 'b', access: ACCESS_READ})
+  @property({ signature: "b", access: ACCESS_READ })
   get CanGoPrevious() {
     return this._CanGoPrevious;
   }
 
-  @property({signature: 'a{sv}', access: ACCESS_READ})
+  @property({ signature: "a{sv}", access: ACCESS_READ })
   get Metadata() {
     return this._Metadata;
   }
 
-  @property({signature: 'd', access: ACCESS_READ})
+  @property({ signature: "d", access: ACCESS_READ })
   get MaximumRate() {
     return this._MaximumRate;
   }
 
-  @property({signature: 'd', access: ACCESS_READ})
+  @property({ signature: "d", access: ACCESS_READ })
   get MinimumRate() {
     return this._MinimumRate;
   }
 
-  @property({signature: 'd'})
+  @property({ signature: "d" })
   get Rate() {
     return this._Rate;
   }
   set Rate(value) {
-    this._setPropertyInternal('Rate', value);
+    this._setPropertyInternal("Rate", value);
   }
 
-  @property({signature: 'b'})
+  @property({ signature: "b" })
   get Shuffle() {
     return this._Shuffle;
   }
   set Shuffle(value) {
-    this._setPropertyInternal('Shuffle', value);
+    this._setPropertyInternal("Shuffle", value);
   }
 
-  @property({signature: 'd'})
+  @property({ signature: "d" })
   get Volume() {
     return this._Volume;
   }
   set Volume(value) {
-    this._setPropertyInternal('Volume', value);
+    this._setPropertyInternal("Volume", value);
   }
 
-  @property({signature: 'x', access: ACCESS_READ})
+  @property({ signature: "x", access: ACCESS_READ })
   get Position() {
     let playerPosition = this.player.getPosition();
     let position = Math.floor(playerPosition || 0);
     if (isNaN(position)) {
-      const err = 'github.mpris_service.InvalidPositionError';
+      const err = "github.mpris_service.InvalidPositionError";
       const message = `The player has set an invalid position: ${playerPosition}`;
       throw new DBusError(err, message);
     }
     return position;
   }
 
-  @property({signature: 's'})
+  @property({ signature: "s" })
   get LoopStatus() {
     if (!constants.isLoopStatusValid(this._LoopStatus)) {
-      const err = 'github.mpris_service.InvalidLoopStatusError';
+      const err = "github.mpris_service.InvalidLoopStatusError";
       const message = `The player has set an invalid loop status: ${this._LoopStatus}`;
       throw new DBusError(err, message);
     }
@@ -122,17 +126,17 @@ class PlayerInterface extends MprisInterface {
   }
   set LoopStatus(value) {
     if (!constants.isLoopStatusValid(value)) {
-      const err = 'github.mpris_service.InvalidLoopStatusError';
+      const err = "github.mpris_service.InvalidLoopStatusError";
       const message = `Tried to set loop status to an invalid value: ${value}`;
       throw new DBusError(err, message);
     }
-    this._setPropertyInternal('LoopStatus', value);
+    this._setPropertyInternal("LoopStatus", value);
   }
 
-  @property({signature: 's', access: ACCESS_READ})
+  @property({ signature: "s", access: ACCESS_READ })
   get PlaybackStatus() {
     if (!constants.isPlaybackStatusValid(this._PlaybackStatus)) {
-      const err = 'github.mpris_service.InvalidPlaybackStatusError';
+      const err = "github.mpris_service.InvalidPlaybackStatusError";
       const message = `The player has set an invalid playback status: ${this._PlaybackStatus}`;
       throw new DBusError(err, message);
     }
@@ -142,58 +146,58 @@ class PlayerInterface extends MprisInterface {
 
   @method({})
   Next() {
-    this.player.emit('next');
+    this.player.emit("next");
   }
 
   @method({})
   Previous() {
-    this.player.emit('previous');
+    this.player.emit("previous");
   }
 
   @method({})
   Pause() {
-    this.player.emit('pause');
+    this.player.emit("pause");
   }
 
   @method({})
   PlayPause() {
-    this.player.emit('playpause');
+    this.player.emit("playpause");
   }
 
   @method({})
   Stop() {
-    this.player.emit('stop');
+    this.player.emit("stop");
   }
 
   @method({})
   Play() {
-    this.player.emit('play');
+    this.player.emit("play");
   }
 
-  @method({inSignature: 'x'})
+  @method({ inSignature: "x" })
   Seek(offset) {
     // XXX overflow
-    offset = JSBI.toNumber(offset);
-    this.player.emit('seek', offset);
+    offset = Number(offset);
+    this.player.emit("seek", offset);
   }
 
-  @method({inSignature: 'ox'})
+  @method({ inSignature: "ox" })
   SetPosition(trackId, position) {
     let e = {
       trackId: trackId,
       // XXX overflow
-      position: JSBI.toNumber(position)
+      position: Number(position),
     };
-    this.player.emit('position', e);
+    this.player.emit("position", e);
   }
 
-  @method({inSignature: 's'})
+  @method({ inSignature: "s" })
   OpenUri(uri) {
     let e = { uri };
-    this.player.emit('open', e);
+    this.player.emit("open", e);
   }
 
-  @signal({signature: 'x'})
+  @signal({ signature: "x" })
   Seeked(position) {
     return position;
   }

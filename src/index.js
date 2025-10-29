@@ -1,21 +1,21 @@
-require('source-map-support').install();
+require("source-map-support").install();
 
-const events = require('events');
-const util = require('util');
+const events = require("events");
+const util = require("util");
 
-const dbus = require('dbus-next');
-dbus.setBigIntCompat(true);
-const PlayerInterface = require('./interfaces/player');
-const RootInterface = require('./interfaces/root');
-const PlaylistsInterface = require('./interfaces/playlists');
-const TracklistInterface = require('./interfaces/tracklist');
-const types = require('./interfaces/types');
-const constants = require('./constants');
+const dbus = require("dbus-next");
+dbus.setBigIntCompat(false);
+const PlayerInterface = require("./interfaces/player");
+const RootInterface = require("./interfaces/root");
+const PlaylistsInterface = require("./interfaces/playlists");
+const TracklistInterface = require("./interfaces/tracklist");
+const types = require("./interfaces/types");
+const constants = require("./constants");
 
-const MPRIS_PATH = '/org/mpris/MediaPlayer2';
+const MPRIS_PATH = "/org/mpris/MediaPlayer2";
 
 function lcfirst(str) {
-  return str[0].toLowerCase()+str.substr(1);
+  return str[0].toLowerCase() + str.substr(1);
 }
 
 /**
@@ -170,33 +170,33 @@ function Player(opts) {
 
   events.EventEmitter.call(this);
   this.name = opts.name;
-  this.supportedInterfaces = opts.supportedInterfaces || ['player'];
+  this.supportedInterfaces = opts.supportedInterfaces || ["player"];
   this._tracks = [];
   this.init(opts);
 }
 util.inherits(Player, events.EventEmitter);
 
-Player.prototype.init = function(opts) {
+Player.prototype.init = function (opts) {
   this.serviceName = `org.mpris.MediaPlayer2.${this.name}`;
   dbus.validators.assertBusNameValid(this.serviceName);
 
   this._bus = dbus.sessionBus();
 
-  this._bus.on('error', (err) => {
-    this.emit('error', err);
+  this._bus.on("error", (err) => {
+    this.emit("error", err);
   });
 
   this.interfaces = {};
 
   this._addRootInterface(this._bus, opts);
 
-  if (this.supportedInterfaces.indexOf('player') >= 0) {
+  if (this.supportedInterfaces.indexOf("player") >= 0) {
     this._addPlayerInterface(this._bus);
   }
-  if (this.supportedInterfaces.indexOf('trackList') >= 0) {
+  if (this.supportedInterfaces.indexOf("trackList") >= 0) {
     this._addTracklistInterface(this._bus);
   }
-  if (this.supportedInterfaces.indexOf('playlists') >= 0) {
+  if (this.supportedInterfaces.indexOf("playlists") >= 0) {
     this._addPlaylistsInterface(this._bus);
   }
 
@@ -205,7 +205,8 @@ Player.prototype.init = function(opts) {
     this._bus.export(MPRIS_PATH, iface);
   }
 
-  this._bus.requestName(this.serviceName, dbus.NameFlag.DO_NOT_QUEUE)
+  this._bus
+    .requestName(this.serviceName, dbus.NameFlag.DO_NOT_QUEUE)
     .then((reply) => {
       if (reply === dbus.RequestNameReply.EXISTS) {
         this.serviceName = `${this.serviceName}.instance${process.pid}`;
@@ -213,48 +214,70 @@ Player.prototype.init = function(opts) {
       }
     })
     .catch((err) => {
-      this.emit('error', err);
+      this.emit("error", err);
     });
 };
 
-Player.prototype._addRootInterface = function(bus, opts) {
+Player.prototype._addRootInterface = function (bus, opts) {
   this.interfaces.root = new RootInterface(this, opts);
-  this._addEventedPropertiesList(this.interfaces.root,
-    ['Identity', 'Fullscreen', 'SupportedUriSchemes', 'SupportedMimeTypes',
-    'CanQuit', 'CanRaise', 'CanSetFullscreen', 'HasTrackList',
-    'DesktopEntry']);
+  this._addEventedPropertiesList(this.interfaces.root, [
+    "Identity",
+    "Fullscreen",
+    "SupportedUriSchemes",
+    "SupportedMimeTypes",
+    "CanQuit",
+    "CanRaise",
+    "CanSetFullscreen",
+    "HasTrackList",
+    "DesktopEntry",
+  ]);
 };
 
-Player.prototype._addPlayerInterface = function(bus) {
+Player.prototype._addPlayerInterface = function (bus) {
   this.interfaces.player = new PlayerInterface(this);
-  let eventedProps = ['PlaybackStatus', 'LoopStatus', 'Rate', 'Shuffle',
-    'Metadata', 'Volume', 'CanControl', 'CanPause', 'CanPlay', 'CanSeek',
-    'CanGoNext', 'CanGoPrevious', 'MinimumRate', 'MaximumRate'];
+  let eventedProps = [
+    "PlaybackStatus",
+    "LoopStatus",
+    "Rate",
+    "Shuffle",
+    "Metadata",
+    "Volume",
+    "CanControl",
+    "CanPause",
+    "CanPlay",
+    "CanSeek",
+    "CanGoNext",
+    "CanGoPrevious",
+    "MinimumRate",
+    "MaximumRate",
+  ];
   this._addEventedPropertiesList(this.interfaces.player, eventedProps);
 };
 
-Player.prototype._addTracklistInterface = function(bus) {
+Player.prototype._addTracklistInterface = function (bus) {
   this.interfaces.tracklist = new TracklistInterface(this);
-  this._addEventedPropertiesList(this.interfaces.tracklist, ['CanEditTracks']);
+  this._addEventedPropertiesList(this.interfaces.tracklist, ["CanEditTracks"]);
 
-  Object.defineProperty(this, 'tracks', {
-    get: function() {
+  Object.defineProperty(this, "tracks", {
+    get: function () {
       return this._tracks;
     },
-    set: function(value) {
+    set: function (value) {
       this._tracks = value;
       this.interfaces.tracklist.TrackListReplaced(value);
     },
     enumerable: true,
-    configurable: true
+    configurable: true,
   });
 };
 
-Player.prototype._addPlaylistsInterface = function(bus) {
+Player.prototype._addPlaylistsInterface = function (bus) {
   this.interfaces.playlists = new PlaylistsInterface(this);
-  this._addEventedPropertiesList(this.interfaces.playlists,
-    ['PlaylistCount', 'ActivePlaylist']);
-}
+  this._addEventedPropertiesList(this.interfaces.playlists, [
+    "PlaylistCount",
+    "ActivePlaylist",
+  ]);
+};
 
 /**
  * Get a valid object path with the `subpath` as the basename which is suitable
@@ -265,7 +288,7 @@ Player.prototype._addPlaylistsInterface = function(bus) {
  * @param {String} subpath - The basename of this path
  * @returns {String} - A valid object path that can be used as an id.
  */
-Player.prototype.objectPath = function(subpath) {
+Player.prototype.objectPath = function (subpath) {
   let path = `/org/node/mediaplayer/${this.name}`;
   if (subpath) {
     path += `/${subpath}`;
@@ -273,30 +296,30 @@ Player.prototype.objectPath = function(subpath) {
   return path;
 };
 
-Player.prototype._addEventedProperty = function(iface, name) {
+Player.prototype._addEventedProperty = function (iface, name) {
   let that = this;
 
   let localName = lcfirst(name);
 
   Object.defineProperty(this, localName, {
-    get: function() {
+    get: function () {
       let value = iface[name];
-      if (name === 'ActivePlaylist') {
+      if (name === "ActivePlaylist") {
         return types.playlistToPlain(value);
-      } else if (name === 'Metadata') {
+      } else if (name === "Metadata") {
         return types.metadataToPlain(value);
       }
       return value;
     },
-    set: function(value) {
+    set: function (value) {
       iface.setProperty(name, value);
     },
     enumerable: true,
-    configurable: true
+    configurable: true,
   });
 };
 
-Player.prototype._addEventedPropertiesList = function(iface, props) {
+Player.prototype._addEventedPropertiesList = function (iface, props) {
   for (let i = 0; i < props.length; i++) {
     this._addEventedProperty(iface, props[i]);
   }
@@ -310,9 +333,9 @@ Player.prototype._addEventedPropertiesList = function(iface, props) {
  * @function
  * @returns {Integer} - The current position of the player in microseconds.
  */
-Player.prototype.getPosition = function() {
+Player.prototype.getPosition = function () {
   return 0;
-}
+};
 
 /**
  * Emits the `Seeked` DBus signal to listening clients with the given position.
@@ -321,7 +344,7 @@ Player.prototype.getPosition = function() {
  * @function
  * @param {Integer} position - The position in microseconds.
  */
-Player.prototype.seeked = function(position) {
+Player.prototype.seeked = function (position) {
   let seekTo = Math.floor(position || 0);
   if (isNaN(seekTo)) {
     throw new Error(`seeked expected a number (got ${position})`);
@@ -329,11 +352,11 @@ Player.prototype.seeked = function(position) {
   this.interfaces.player.Seeked(seekTo);
 };
 
-Player.prototype.getTrackIndex = function(trackId) {
+Player.prototype.getTrackIndex = function (trackId) {
   for (let i = 0; i < this.tracks.length; i++) {
     let track = this.tracks[i];
 
-    if (track['mpris:trackid'] === trackId) {
+    if (track["mpris:trackid"] === trackId) {
       return i;
     }
   }
@@ -341,22 +364,22 @@ Player.prototype.getTrackIndex = function(trackId) {
   return -1;
 };
 
-Player.prototype.getTrack = function(trackId) {
+Player.prototype.getTrack = function (trackId) {
   return this.tracks[this.getTrackIndex(trackId)];
 };
 
-Player.prototype.addTrack = function(track) {
+Player.prototype.addTrack = function (track) {
   this.tracks.push(track);
   this.interfaces.tracklist.setTracks(this.tracks);
 
-  let afterTrack = '/org/mpris/MediaPlayer2/TrackList/NoTrack';
+  let afterTrack = "/org/mpris/MediaPlayer2/TrackList/NoTrack";
   if (this.tracks.length > 2) {
-    afterTrack = this.tracks[this.tracks.length - 2]['mpris:trackid'];
+    afterTrack = this.tracks[this.tracks.length - 2]["mpris:trackid"];
   }
   that.interfaces.tracklist.TrackAdded(afterTrack);
 };
 
-Player.prototype.removeTrack = function(trackId) {
+Player.prototype.removeTrack = function (trackId) {
   let i = this.getTrackIndex(trackId);
   this.tracks.splice(i, 1);
   this.interfaces.tracklist.setTracks(this.tracks);
@@ -372,7 +395,7 @@ Player.prototype.removeTrack = function(trackId) {
  * @function
  * @param {String} playlistId - The id for the playlist entry.
  */
-Player.prototype.getPlaylistIndex = function(playlistId) {
+Player.prototype.getPlaylistIndex = function (playlistId) {
   for (let i = 0; i < this.playlists.length; i++) {
     let playlist = this.playlists[i];
 
@@ -392,12 +415,12 @@ Player.prototype.getPlaylistIndex = function(playlistId) {
  * @function
  * @param {Array} playlists - A list of playlists.
  */
-Player.prototype.setPlaylists = function(playlists) {
+Player.prototype.setPlaylists = function (playlists) {
   this.playlists = playlists;
   this.playlistCount = playlists.length;
 
   let that = this;
-  this.playlists.forEach(function(playlist) {
+  this.playlists.forEach(function (playlist) {
     that.interfaces.playlists.PlaylistChanged(playlist);
   });
 };
@@ -410,7 +433,7 @@ Player.prototype.setPlaylists = function(playlists) {
  * @function
  * @param {String} playlistId - The id of the playlist to activate.
  */
-Player.prototype.setActivePlaylist = function(playlistId) {
+Player.prototype.setActivePlaylist = function (playlistId) {
   this.interfaces.playlists.setActivePlaylistId(playlistId);
 };
 
